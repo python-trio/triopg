@@ -3,7 +3,7 @@ sudo: false
 dist: trusty
 
 services:
-  - postgresql
+  postgresql: "9.6"
 
 matrix:
   include:
@@ -12,9 +12,7 @@ matrix:
       env: CHECK_DOCS=1
     - python: 3.6
       env: CHECK_FORMATTING=1
-    # cannot find `pg_ctl` with trusty's postgresql 9.2, so use xenial instead
     - python: 3.6
-      dist: xenial
     # As of 2018-07-05, Travis's 3.7 and 3.8 builds only work if you
     # use dist: xenial AND sudo: required
     # See: https://github.com/python-trio/trio/pull/556#issuecomment-402879391
