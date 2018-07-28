@@ -2,8 +2,11 @@ language: python
 sudo: false
 dist: trusty
 
-services:
+addons:
   postgresql: "9.6"
+
+services:
+  - postgresql
 
 matrix:
   include:
