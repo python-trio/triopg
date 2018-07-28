@@ -1,4 +1,4 @@
-from functools import wraps
+from functools import wraps, partial
 import trio
 import asyncpg
 import trio_asyncio
@@ -18,9 +18,8 @@ async def connect(*args, **kwargs):
     return TrioConnectionProxy(await asyncpg.connect(*args, **kwargs))
 
 
-@trio_asyncio.trio2aio
-async def create_pool(*args, **kwargs):
-    return TrioPoolProxy(await asyncpg.create_pool(*args, **kwargs))
+def create_pool(*args, **kwargs):
+    return TrioPoolProxy(*args, **kwargs)
 
 
 class TrioTransactionProxy:
@@ -84,8 +83,11 @@ class TrioPoolAcquireContextProxy:
 
 
 class TrioPoolProxy:
-    def __init__(self, asyncpg_pool):
-        self._asyncpg_pool = asyncpg_pool
+    def __init__(self, *args, **kwargs):
+        self._asyncpg_create_pool = partial(
+            asyncpg.create_pool, *args, **kwargs
+        )
+        self._asyncpg_pool = None
 
     def acquire(self):
         return TrioPoolAcquireContextProxy(self._asyncpg_pool.acquire())
@@ -98,9 +100,19 @@ class TrioPoolProxy:
     def terminate(self):
         return self._asyncpg_pool.terminate()
 
-    async def __aenter__(self, *args):
+    async def _async__init__(self):
+        if not self._asyncpg_pool:
+            self._asyncpg_pool = await trio_asyncio.run_asyncio(
+                self._asyncpg_create_pool
+            )
+        return self._asyncpg_pool
+
+    def __await__(self):
+        return self._async__init__().__await__()
+
+    async def __aenter__(self):
+        await self._async__init__()
         return self
 
-    async def __aexit__(self, *args):
-        await self.close()
-        return False
+    async def __aexit__(self, *exc):
+        return await self.close()
