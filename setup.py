@@ -20,7 +20,7 @@ setup(
         "asyncpg",
     ],
     keywords=["async", "trio", "sql", "postgresql", "asyncpg"],
-    python_requires=">=3.5",
+    python_requires=">=3.6",
     classifiers=[
         "License :: OSI Approved :: MIT License",
         "License :: OSI Approved :: Apache Software License",
