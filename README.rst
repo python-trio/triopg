@@ -26,6 +26,7 @@ Quick example:
     import trio_asyncio
     import triopg
 
+
     async def main():
         conn = await triopg.connect()
 
@@ -38,12 +39,12 @@ Quick example:
             )"""
         )
 
-
         async with conn.transaction():
             await conn.execute("INSERT INTO users (user_id) VALUES (1)")
             await conn.execute("INSERT INTO users (user_id) VALUES (2)")
             await conn.execute("INSERT INTO users (user_id) VALUES (3)")
 
         print(await conn.execute("SELECT * FROM users"))
+
 
     trio_asyncio.run(main)
