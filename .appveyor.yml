@@ -10,6 +10,10 @@ environment:
     - PYTHON: "C:\\Python36"
     - PYTHON: "C:\\Python36-x64"
 
+before_script:
+  - which pg_config
+  - pg_config --version
+
 build_script:
   - "git --no-pager log -n2"
   - "echo %APPVEYOR_REPO_COMMIT%"

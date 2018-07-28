@@ -29,5 +29,9 @@ matrix:
       language: generic
       env: MACPYTHON=3.7.0
 
+before_script:
+  - which pg_config
+  - pg_config --version
+
 script:
   - ci/travis.sh
