@@ -3,7 +3,7 @@ skip_tags: true
 os: Visual Studio 2015
 
 services:
-  - postgresql
+  - postgresql96
 
 environment:
   matrix:
@@ -12,6 +12,9 @@ environment:
 
 
 build_script:
+  - "SET PGUSER=postgres"
+  - "SET PGPASSWORD=Password12!"
+  - "PATH=C:\Program Files\PostgreSQL\9.6\bin\;%PATH%"
   - "which pg_config"
   - "pg_config --version"
   - "git --no-pager log -n2"
