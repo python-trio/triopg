@@ -1,3 +1,15 @@
+.. image:: https://travis-ci.org/python-trio/triopg.svg?branch=master
+   :target: https://travis-ci.org/python-trio/triopg
+   :alt: Automated test status (Linux and MacOS)
+
+.. image:: https://ci.appveyor.com/api/projects/status/4t8ydnax9p6ehauj/branch/master?svg=true
+   :target: https://ci.appveyor.com/project/touilleMan/triopg/history
+   :alt: Automated test status (Windows)
+
+.. image:: https://codecov.io/gh/python-trio/triopg/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/python-trio/triopg
+   :alt: Test coverage
+
 triopg
 ======
 
