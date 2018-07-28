@@ -3,11 +3,12 @@ import trio_asyncio
 import asyncpg
 from asyncpg.cluster import Cluster
 import tempfile
+from functools import partial
 
 import triopg
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 async def asyncio_loop():
     async with trio_asyncio.open_loop() as loop:
         yield loop
@@ -34,23 +35,15 @@ def postgresql_connection_specs(cluster):
 
 @pytest.fixture()
 async def asyncpg_conn(asyncio_loop, postgresql_connection_specs):
-    @trio_asyncio.trio2aio
-    async def _open_connection():
-        return await asyncpg.connect(**postgresql_connection_specs)
-
-    @trio_asyncio.trio2aio
-    async def _close_connection(conn):
-        await conn.close()
-
-    conn = await _open_connection()
+    conn = await trio_asyncio.run_asyncio(partial(asyncpg.connect, **postgresql_connection_specs))
     try:
         yield conn
     finally:
-        await _close_connection(conn)
+        await trio_asyncio.run_asyncio(conn.close)
 
 
 @pytest.fixture()
-async def triopg_conn(postgresql_connection_specs):
+async def triopg_conn(asyncio_loop, postgresql_connection_specs):
     conn = await triopg.connect(**postgresql_connection_specs)
     try:
         yield conn
