@@ -6,15 +6,16 @@ services:
   - postgresql96
 
 environment:
+  global:
+    PGINSTALLATION: "C:\\Program Files\\PostgreSQL\\9.6\\bin"
   matrix:
     - PYTHON: "C:\\Python36"
     - PYTHON: "C:\\Python36-x64"
 
-
 build_script:
   - "SET PGUSER=postgres"
   - "SET PGPASSWORD=Password12!"
-  - "PATH=C:\Program Files\PostgreSQL\9.6\bin\;%PATH%"
+  - "PATH=C:\\Program Files\\PostgreSQL\\9.6\\bin\\;%PATH%"
   - "which pg_config"
   - "pg_config --version"
   - "git --no-pager log -n2"

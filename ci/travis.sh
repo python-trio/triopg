@@ -4,6 +4,12 @@ set -ex
 
 YAPF_VERSION=0.22.0
 
+if [ "${TRAVIS_OS_NAME}" == "osx" ]; then
+    export PGINSTALLATION="/usr/local/opt/postgresql@${PGVERSION}/bin"
+else
+    export PGINSTALLATION="/usr/lib/postgresql/${PGVERSION}/bin"
+fi
+
 if [ "$TRAVIS_OS_NAME" = "osx" ]; then
     curl -Lo macpython.pkg https://www.python.org/ftp/python/${MACPYTHON}/python-${MACPYTHON}-macosx10.6.pkg
     sudo installer -pkg macpython.pkg -target /
