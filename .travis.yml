@@ -2,6 +2,9 @@ language: python
 sudo: false
 dist: trusty
 
+services:
+  - postgresql
+
 matrix:
   include:
     # These are quick and often catch errors, so list them first
