@@ -107,9 +107,6 @@ class TrioPoolProxy:
             )
         return self._asyncpg_pool
 
-    def __await__(self):
-        return self._async__init__().__await__()
-
     async def __aenter__(self):
         await self._async__init__()
         return self

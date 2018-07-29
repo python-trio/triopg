@@ -47,24 +47,7 @@ async def test_triopg_connection(
 
 
 @pytest.mark.trio
-@pytest.mark.xfail(reason='TrioPoolProxy.__await__ is not working yet')
-async def test_triopg_pool_with_await(
-        asyncio_loop, asyncpg_conn, postgresql_connection_specs
-):
-    pool = await triopg.create_pool(**postgresql_connection_specs)
-    async with pool.acquire() as conn:
-        async with pool.acquire() as conn2:
-            assert conn != conn2
-        await execute_queries(conn, asyncpg_conn)
-    await pool.close()
-
-    with pytest.raises(triopg.InterfaceError):
-        async with pool.acquire() as conn:
-            pass
-
-
-@pytest.mark.trio
-async def test_triopg_pool_as_context_manager(
+async def test_triopg_pool(
         asyncio_loop, asyncpg_conn, postgresql_connection_specs
 ):
     async with triopg.create_pool(**postgresql_connection_specs) as pool:
