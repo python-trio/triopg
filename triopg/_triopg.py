@@ -18,7 +18,13 @@ async def connect(*args, **kwargs):
     return TrioConnectionProxy(await asyncpg.connect(*args, **kwargs))
 
 
-def create_pool(*args, **kwargs):
+async def create_pool(*args, **kwargs):
+    pool = TrioPoolProxy(*args, **kwargs)
+    await pool._async__init__()
+    return pool
+
+
+def create_pool_cm(*args, **kwargs):
     return TrioPoolProxy(*args, **kwargs)
 
 
