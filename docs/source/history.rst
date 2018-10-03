@@ -5,6 +5,12 @@ Release history
 
 .. towncrier release notes start
 
+Triopg 0.2.1 (2018-10-03)
+-------------------------
+
+- Upgrade for compatibility with trio-asyncio>=0.9.0
+
+
 Triopg 0.2.0 (2018-08-16)
 -------------------------
 
