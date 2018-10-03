@@ -15,9 +15,9 @@ setup(
     license="MIT -or- Apache License 2.0",
     packages=find_packages(),
     install_requires=[
-        "trio",
-        "trio-asyncio",
-        "asyncpg",
+        "trio>=0.7.0",
+        "trio-asyncio>=0.9.0",
+        "asyncpg>=0.15.0",
     ],
     keywords=["async", "trio", "sql", "postgresql", "asyncpg"],
     python_requires=">=3.6",

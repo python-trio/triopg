@@ -5,7 +5,7 @@ import triopg
 
 
 async def execute_queries(triopg_conn, asyncpg_conn):
-    @trio_asyncio.trio2aio
+    @trio_asyncio.aio_as_trio
     async def _asyncpg_query(sql):
         return await asyncpg_conn.execute(sql)
 
