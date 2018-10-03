@@ -34,7 +34,8 @@ def postgresql_connection_specs(cluster):
 
 @pytest.fixture()
 async def asyncpg_conn(asyncio_loop, postgresql_connection_specs):
-    conn = await trio_asyncio.aio_as_trio(asyncpg.connect)(**postgresql_connection_specs)
+    conn = await trio_asyncio.aio_as_trio(asyncpg.connect
+                                          )(**postgresql_connection_specs)
     try:
         yield conn
     finally:
