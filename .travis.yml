@@ -25,9 +25,11 @@ matrix:
     - python: 3.7
       dist: xenial
       sudo: required
-    - python: 3.8-dev
-      dist: xenial
-      sudo: required
+    # Currently asyncpg uses deprecated `loop` argument, which cause error
+    # due to pytest run in `-W error` mode
+    # - python: 3.8-dev
+    #   dist: xenial
+    #   sudo: required
     - os: osx
       language: generic
       env: MACPYTHON=3.6.6
