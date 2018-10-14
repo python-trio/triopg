@@ -13,18 +13,11 @@ def _shielded(f):
     return wrapper
 
 
-@trio_asyncio.aio_as_trio
-async def connect(*args, **kwargs):
-    return TrioConnectionProxy(await asyncpg.connect(*args, **kwargs))
+def connect(*args, **kwargs):
+    return TrioConnectionProxy(*args, **kwargs)
 
 
-async def create_pool(*args, **kwargs):
-    pool = TrioPoolProxy(*args, **kwargs)
-    await pool._async__init__()
-    return pool
-
-
-def create_pool_cm(*args, **kwargs):
+def create_pool(*args, **kwargs):
     return TrioPoolProxy(*args, **kwargs)
 
 
@@ -43,8 +36,11 @@ class TrioTransactionProxy:
 
 
 class TrioConnectionProxy:
-    def __init__(self, asyncpg_conn):
-        self._asyncpg_conn = asyncpg_conn
+    def __init__(self, *args, **kwargs):
+        self._asyncpg_create_connection = partial(
+            asyncpg.connect, *args, **kwargs
+        )
+        self._asyncpg_conn = None
 
     def transaction(self, *args, **kwargs):
         asyncpg_transaction = self._asyncpg_conn.transaction(*args, **kwargs)
@@ -72,6 +68,16 @@ class TrioConnectionProxy:
     async def close(self):
         return await self._asyncpg_conn.close()
 
+    async def __aenter__(self):
+        if not self._asyncpg_conn:
+            self._asyncpg_conn = await trio_asyncio.aio_as_trio(
+                self._asyncpg_create_connection
+            )()
+        return self
+
+    async def __aexit__(self, *exc):
+        return await self.close()
+
 
 class TrioPoolAcquireContextProxy:
     def __init__(self, asyncpg_acquire_context):
@@ -80,7 +86,9 @@ class TrioPoolAcquireContextProxy:
     @trio_asyncio.aio_as_trio
     async def __aenter__(self, *args):
         proxy = await self._asyncpg_acquire_context.__aenter__(*args)
-        return TrioConnectionProxy(proxy._con)
+        conn_proxy = TrioConnectionProxy()
+        conn_proxy._asyncpg_conn = proxy._con
+        return conn_proxy
 
     @_shielded
     @trio_asyncio.aio_as_trio
@@ -106,15 +114,11 @@ class TrioPoolProxy:
     def terminate(self):
         return self._asyncpg_pool.terminate()
 
-    async def _async__init__(self):
+    async def __aenter__(self):
         if not self._asyncpg_pool:
             self._asyncpg_pool = await trio_asyncio.aio_as_trio(
                 self._asyncpg_create_pool
             )()
-        return self._asyncpg_pool
-
-    async def __aenter__(self):
-        await self._async__init__()
         return self
 
     async def __aexit__(self, *exc):
