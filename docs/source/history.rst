@@ -5,6 +5,14 @@ Release history
 
 .. towncrier release notes start
 
+Triopg 0.3.0 (2018-10-14)
+-------------------------
+
+-  Make ``connect`` and ``create_pool`` async context manager only to avoid
+   crash due to asyncpg using __del__ to call on the asyncio loop
+   (see https://github.com/python-trio/trio-asyncio/issues/44)
+
+
 Triopg 0.2.1 (2018-10-03)
 -------------------------
 
