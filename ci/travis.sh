@@ -93,7 +93,7 @@ else
     mkdir empty
     cd empty
 
-    pytest -W error -ra -v --pyargs triopg --cov=triopg --cov-config=../.coveragerc --verbose
+    pytest -ra -v --pyargs triopg --cov=triopg --cov-config=../.coveragerc --verbose
 
     bash <(curl -s https://codecov.io/bash)
 fi
