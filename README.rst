@@ -28,23 +28,23 @@ Quick example:
 
 
     async def main():
-        conn = await triopg.connect()
+        async with await triopg.connect() as conn:
 
-        await conn.execute(
-            """
-            DROP TABLE IF EXISTS users;
-            CREATE TABLE IF NOT EXISTS users (
-                _id SERIAL PRIMARY KEY,
-                user_id VARCHAR(32) UNIQUE
-            )"""
-        )
+            await conn.execute(
+                """
+                DROP TABLE IF EXISTS users;
+                CREATE TABLE IF NOT EXISTS users (
+                    _id SERIAL PRIMARY KEY,
+                    user_id VARCHAR(32) UNIQUE
+                )"""
+            )
 
-        async with conn.transaction():
-            await conn.execute("INSERT INTO users (user_id) VALUES (1)")
-            await conn.execute("INSERT INTO users (user_id) VALUES (2)")
-            await conn.execute("INSERT INTO users (user_id) VALUES (3)")
+            async with conn.transaction():
+                await conn.execute("INSERT INTO users (user_id) VALUES (1)")
+                await conn.execute("INSERT INTO users (user_id) VALUES (2)")
+                await conn.execute("INSERT INTO users (user_id) VALUES (3)")
 
-        print(await conn.execute("SELECT * FROM users"))
+            print(await conn.execute("SELECT * FROM users"))
 
 
     trio_asyncio.run(main)
