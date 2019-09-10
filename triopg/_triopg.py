@@ -95,6 +95,9 @@ class TrioPoolAcquireContextProxy:
     async def __aexit__(self, *args):
         return await self._asyncpg_acquire_context.__aexit__(*args)
 
+    def __await__(self):
+        return self._asyncpg_acquire_context.__await__()
+
 
 class TrioPoolProxy:
     def __init__(self, *args, **kwargs):
@@ -114,12 +117,20 @@ class TrioPoolProxy:
     def terminate(self):
         return self._asyncpg_pool.terminate()
 
-    async def __aenter__(self):
+    async def _connect(self):
         if not self._asyncpg_pool:
             self._asyncpg_pool = await trio_asyncio.aio_as_trio(
                 self._asyncpg_create_pool
             )()
+            assert self._asyncpg_pool
+
+    async def __aenter__(self):
+        await self._connect()
         return self
+
+    # needed so that create_pool can be used as a context manager or with `await create_pool()`
+    def __await__(self):
+        return self.__aenter__().__await__()
 
     async def __aexit__(self, *exc):
         return await self.close()

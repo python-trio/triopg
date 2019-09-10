@@ -56,3 +56,12 @@ async def test_triopg_pool(
     with pytest.raises(triopg.InterfaceError):
         async with pool.acquire() as conn:
             pass
+
+    pool = await triopg.create_pool(**postgresql_connection_specs)
+    async with pool.acquire() as conn:
+        await execute_queries(conn, asyncpg_conn)
+
+    await pool.close()
+    with pytest.raises(triopg.InterfaceError):
+        async with pool.acquire() as conn:
+            pass
