@@ -106,6 +106,28 @@ class TrioPoolProxy:
     def acquire(self):
         return TrioPoolAcquireContextProxy(self._asyncpg_pool.acquire())
 
+    async def execute(self, statement: str, *args, timeout: float = None):
+        async with self.acquire() as conn:
+            return await conn.execute(statement, *args, timeout=timeout)
+
+    async def executemany(
+            self, statement: str, args, *, timeout: float = None
+    ):
+        async with self.acquire() as conn:
+            return await conn.executemany(statement, args, timeout=timeout)
+
+    async def fetch(self, query, *args, timeout: float = None):
+        async with self.acquire() as conn:
+            return await conn.fetch(query, *args, timeout=timeout)
+
+    async def fetchval(self, query, *args, timeout: float = None):
+        async with self.acquire() as conn:
+            return await conn.fetchval(query, *args, timeout=timeout)
+
+    async def fetchrow(self, query, *args, timeout: float = None):
+        async with self.acquire() as conn:
+            return await conn.fetchrow(query, *args, timeout=timeout)
+
     @_shielded
     @trio_asyncio.aio_as_trio
     async def close(self):
