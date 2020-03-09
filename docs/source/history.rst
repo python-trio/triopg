@@ -5,6 +5,13 @@ Release history
 
 .. towncrier release notes start
 
+Triopg 0.4.0 (2020-03-09)
+-------------------------
+
+-  Add ``Pool.fetchrow``, ``Pool.fetchval``, ``Pool.execute``,
+   and ``Pool.executemany`` shortcuts.
+
+
 Triopg 0.3.0 (2018-10-14)
 -------------------------
 
