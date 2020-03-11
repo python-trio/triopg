@@ -7,7 +7,7 @@ import trio_asyncio
 def _shielded(f):
     @wraps(f)
     async def wrapper(*args, **kwargs):
-        with trio.open_cancel_scope(shield=True):
+        with trio.CancelScope(shield=True):
             return await f(*args, **kwargs)
 
     return wrapper
