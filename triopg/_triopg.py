@@ -35,6 +35,28 @@ class TrioTransactionProxy:
         return await self._asyncpg_transaction.__aexit__(*args)
 
 
+class TrioStatementProxy:
+    def __init__(self, asyncpg_statement):
+        self._asyncpg_statement = asyncpg_statement
+
+    def __getattr__(self, attr):
+        target = getattr(self._asyncpg_statement, attr)
+
+        if callable(target):
+
+            @wraps(target)
+            @trio_asyncio.aio_as_trio
+            async def wrapper(*args, **kwargs):
+                return await target(*args, **kwargs)
+
+            # Only generate the function wrapper once per instance
+            setattr(self, attr, wrapper)
+
+            return wrapper
+
+        return target
+
+
 class TrioConnectionProxy:
     def __init__(self, *args, **kwargs):
         self._asyncpg_create_connection = partial(
@@ -45,6 +67,10 @@ class TrioConnectionProxy:
     def transaction(self, *args, **kwargs):
         asyncpg_transaction = self._asyncpg_conn.transaction(*args, **kwargs)
         return TrioTransactionProxy(asyncpg_transaction)
+
+    async def prepare(self, *args, **kwargs):
+        asyncpg_statement = await trio_asyncio.aio_as_trio(self._asyncpg_conn.prepare(*args, **kwargs))
+        return TrioStatementProxy(asyncpg_statement)
 
     def __getattr__(self, attr):
         target = getattr(self._asyncpg_conn, attr)
