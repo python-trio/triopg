@@ -69,7 +69,9 @@ class TrioConnectionProxy:
         return TrioTransactionProxy(asyncpg_transaction)
 
     async def prepare(self, *args, **kwargs):
-        asyncpg_statement = await trio_asyncio.aio_as_trio(self._asyncpg_conn.prepare(*args, **kwargs))
+        asyncpg_statement = await trio_asyncio.aio_as_trio(
+            self._asyncpg_conn.prepare(*args, **kwargs)
+        )
         return TrioStatementProxy(asyncpg_statement)
 
     def __getattr__(self, attr):
