@@ -18,32 +18,32 @@ async def execute_queries(triopg_conn, asyncpg_conn):
             user_id VARCHAR(32) UNIQUE
         )"""
     )
-    assert await _asyncpg_query("""SELECT * FROM users""") == "SELECT 0"
+    assert await _asyncpg_query("SELECT * FROM users") == "SELECT 0"
 
     # Execute in transaction without exception
     async with triopg_conn.transaction():
         await triopg_conn.execute("INSERT INTO users (user_id) VALUES (1)")
-    assert await _asyncpg_query("""SELECT * FROM users""") == "SELECT 1"
+    assert await _asyncpg_query("SELECT * FROM users") == "SELECT 1"
 
-    # Execute in transaction raising exception, request shound not be executed
+    # Execute in transaction raising exception, request should not be executed
     with pytest.raises(Exception):
         async with triopg_conn.transaction():
             await triopg_conn.execute("INSERT INTO users (user_id) VALUES (2)")
             raise Exception()
 
-    assert await _asyncpg_query("""SELECT * FROM users""") == "SELECT 1"
+    assert await _asyncpg_query("SELECT * FROM users") == "SELECT 1"
 
-    assert await triopg_conn.fetchval("""SELECT 1""") == 1
-    assert list(await triopg_conn.fetchrow("""VALUES (0, 1, 2, 3)""")) == list(
+    assert await triopg_conn.fetchval("SELECT 1") == 1
+    assert list(await triopg_conn.fetchrow("VALUES (0, 1, 2, 3)")) == list(
         range(4)
     )
 
     user_ids = [(str(i),) for i in range(2, 11)]
     await triopg_conn.executemany(
-        """INSERT INTO users (user_id) VALUES ($1)""", user_ids
+        "INSERT INTO users (user_id) VALUES ($1)", user_ids
     )
 
-    assert await _asyncpg_query("""SELECT * FROM users""") == "SELECT 10"
+    assert await _asyncpg_query("SELECT * FROM users") == "SELECT 10"
 
 
 @pytest.mark.trio
