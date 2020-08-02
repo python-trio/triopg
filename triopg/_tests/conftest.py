@@ -44,7 +44,6 @@ async def asyncpg_conn(asyncio_loop, postgresql_connection_specs):
 
 @pytest.fixture
 def asyncpg_execute(asyncpg_conn):
-
     @trio_asyncio.aio_as_trio
     async def _asyncpg_execute(sql):
         return await asyncpg_conn.execute(sql)

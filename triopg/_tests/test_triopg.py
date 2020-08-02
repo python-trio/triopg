@@ -21,7 +21,10 @@ async def test_connection_closed(asyncio_loop, postgresql_connection_specs):
 @pytest.mark.trio
 async def test_cursor(triopg_conn):
     async with triopg_conn.transaction():
-        cursor_factory = triopg_conn.cursor("VALUES ($1, 1), ($2, 2), ($3, 3), ($4, 4), ($5, 5)", "1", "2", "3", "4", "5")
+        cursor_factory = triopg_conn.cursor(
+            "VALUES ($1, 1), ($2, 2), ($3, 3), ($4, 4), ($5, 5)", "1", "2",
+            "3", "4", "5"
+        )
         cursor = await cursor_factory
 
         row = await cursor.fetchrow()
@@ -32,7 +35,8 @@ async def test_cursor(triopg_conn):
         assert [unwrap(x) for x in fetched] == [("3", 3), ("4", 4)]
 
         items = []
-        async for row in triopg_conn.cursor("VALUES ($1, 1), ($2, 2), ($3, 3)", "1", "2", "3"):
+        async for row in triopg_conn.cursor("VALUES ($1, 1), ($2, 2), ($3, 3)",
+                                            "1", "2", "3"):
             items.append(unwrap(row))
         assert items == [("1", 1), ("2", 2), ("3", 3)]
 
@@ -73,7 +77,9 @@ async def test_prepared_statement(triopg_conn):
 
     # Test cursor in prepared statement
     async with triopg_conn.transaction():
-        stmt = await triopg_conn.prepare("VALUES ($1, 1), ($2, 2), ($3, 3), ($4, 4), ($5, 5)")
+        stmt = await triopg_conn.prepare(
+            "VALUES ($1, 1), ($2, 2), ($3, 3), ($4, 4), ($5, 5)"
+        )
 
         cursor = await stmt.cursor("1", "2", "3", "4", "5")
         row = await cursor.fetchrow()
@@ -132,5 +138,7 @@ async def test_use_pool_without_acquire_connection(triopg_pool):
     rep = await triopg_pool.fetchrow("SELECT * FROM users WHERE _id = $1", 1)
     assert dict(rep.items()) == {"_id": 1, "user_id": "0"}
 
-    val = await triopg_pool.fetchval("SELECT user_id FROM users WHERE _id = $1", 2)
+    val = await triopg_pool.fetchval(
+        "SELECT user_id FROM users WHERE _id = $1", 2
+    )
     assert val == "1"

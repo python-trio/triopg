@@ -66,7 +66,8 @@ class TrioCursorFactoryProxy:
         return TrioCursorProxy(asyncpg_cursor)
 
     def __aiter__(self):
-        self._asyncpg_cursor_aiter = self._asyncpg_transaction_factory.__aiter__()
+        self._asyncpg_cursor_aiter = self._asyncpg_transaction_factory.__aiter__(
+        )
         return self
 
     @trio_asyncio.aio_as_trio
@@ -79,7 +80,9 @@ class TrioStatementProxy:
         self._asyncpg_statement = asyncpg_statement
 
     def cursor(self, *args, **kwargs):
-        asyncpg_cursor_factory = self._asyncpg_statement.cursor(*args, **kwargs)
+        asyncpg_cursor_factory = self._asyncpg_statement.cursor(
+            *args, **kwargs
+        )
         return TrioCursorFactoryProxy(asyncpg_cursor_factory)
 
     def __getattr__(self, attr):
