@@ -5,6 +5,21 @@ Release history
 
 .. towncrier release notes start
 
+Triopg 0.5.0 (2020-08-03)
+-------------------------
+
+Features
+~~~~~~~~
+
+- Add support for prepared statement and cursor (`#9 <https://github.com/python-trio/triopg/issues/9>`__)
+
+
+Misc
+~~~~
+
+- `#5 <https://github.com/python-trio/triopg/issues/5>`__
+
+
 Triopg 0.4.0 (2020-03-09)
 -------------------------
 

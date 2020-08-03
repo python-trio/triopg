@@ -1,1 +1,0 @@
-Fix deprecated use of trio.open_cancel_scope
