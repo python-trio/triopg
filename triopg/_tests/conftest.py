@@ -42,10 +42,28 @@ async def asyncpg_conn(asyncio_loop, postgresql_connection_specs):
         await trio_asyncio.aio_as_trio(conn.close)()
 
 
-@pytest.fixture()
-async def triopg_conn(asyncio_loop, postgresql_connection_specs):
-    conn = await triopg.connect(**postgresql_connection_specs)
-    try:
-        yield conn
-    finally:
-        await conn.close()
+@pytest.fixture
+def asyncpg_execute(asyncpg_conn):
+    @trio_asyncio.aio_as_trio
+    async def _asyncpg_execute(sql):
+        return await asyncpg_conn.execute(sql)
+
+    return _asyncpg_execute
+
+
+@pytest.fixture(params=["from_connect", "from_pool"])
+async def triopg_conn(request, asyncio_loop, postgresql_connection_specs):
+    if request.param == "from_connect":
+        async with triopg.connect(**postgresql_connection_specs) as conn:
+            yield conn
+
+    else:
+        async with triopg.create_pool(**postgresql_connection_specs) as pool:
+            async with pool.acquire() as conn:
+                yield conn
+
+
+@pytest.fixture
+async def triopg_pool(asyncio_loop, postgresql_connection_specs):
+    async with triopg.create_pool(**postgresql_connection_specs) as pool:
+        yield pool
