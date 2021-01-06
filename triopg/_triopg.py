@@ -1,4 +1,5 @@
 from functools import wraps, partial
+from inspect import iscoroutinefunction
 import trio
 import asyncpg
 import trio_asyncio
@@ -123,7 +124,7 @@ class TrioConnectionProxy:
     def __getattr__(self, attr):
         target = getattr(self._asyncpg_conn, attr)
 
-        if callable(target):
+        if iscoroutinefunction(target):
 
             @wraps(target)
             @trio_asyncio.aio_as_trio
