@@ -1,0 +1,2 @@
+Correctly proxy ordinary (non-async) ``asyncpg.Connection`` methods.
+For example, ``.is_closed()``, ``.get_server_pid()`` etc.

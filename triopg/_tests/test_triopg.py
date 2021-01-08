@@ -1,4 +1,5 @@
 import pytest
+import trio
 import trio_asyncio
 import asyncpg
 
@@ -12,8 +13,20 @@ def unwrap(record):
 
 @pytest.mark.trio
 async def test_connection_closed(asyncio_loop, postgresql_connection_specs):
+    termination_listener_called = False
+
+    def _termination_listener(connection):
+        nonlocal termination_listener_called
+        termination_listener_called = True
+
     async with triopg.connect(**postgresql_connection_specs) as conn:
-        pass
+        assert not conn.is_closed()
+        pid = conn.get_server_pid()
+        assert isinstance(pid, int)
+        conn.add_termination_listener(_termination_listener)
+
+    assert conn.is_closed()
+    assert termination_listener_called
     with pytest.raises(triopg.InterfaceError):
         await conn.execute("VALUES (1)")
 
@@ -44,6 +57,7 @@ async def test_cursor(triopg_conn):
 @pytest.mark.trio
 async def test_transaction(triopg_conn, asyncpg_execute):
     # Execute without transaction
+    assert not triopg_conn.is_in_transaction()
     await triopg_conn.execute(
         """
         DROP TABLE IF EXISTS users;
@@ -56,6 +70,7 @@ async def test_transaction(triopg_conn, asyncpg_execute):
 
     # Execute in transaction without exception
     async with triopg_conn.transaction():
+        assert triopg_conn.is_in_transaction()
         await triopg_conn.execute("INSERT INTO users (user_id) VALUES (1)")
     assert await asyncpg_execute("SELECT * FROM users") == "SELECT 1"
 
@@ -65,6 +80,7 @@ async def test_transaction(triopg_conn, asyncpg_execute):
             await triopg_conn.execute("INSERT INTO users (user_id) VALUES (2)")
             raise Exception()
 
+    assert not triopg_conn.is_in_transaction()
     assert await asyncpg_execute("SELECT * FROM users") == "SELECT 1"
 
 
@@ -142,3 +158,25 @@ async def test_use_pool_without_acquire_connection(triopg_pool):
         "SELECT user_id FROM users WHERE _id = $1", 2
     )
     assert val == "1"
+
+
+@pytest.mark.trio
+async def test_listener(triopg_conn, asyncpg_execute):
+    listener_sender, listener_receiver = trio.open_memory_channel(100)
+
+    def _listener(connection, pid, channel, payload):
+        listener_sender.send_nowait((channel, payload))
+
+    assert await asyncpg_execute("NOTIFY foo, '1'")  # Should be ignored
+    await triopg_conn.add_listener("foo", _listener)
+    assert await asyncpg_execute("NOTIFY dummy")  # Should be ignored
+    assert await asyncpg_execute("NOTIFY foo, '2'")
+    await triopg_conn.remove_listener("foo", _listener)
+    assert await asyncpg_execute("NOTIFY foo, '3'")  # Should be ignored
+
+    with trio.fail_after(1):
+        channel, payload = await listener_receiver.receive()
+    assert channel == "foo"
+    assert payload == "2"
+    with pytest.raises(trio.WouldBlock):
+        await listener_receiver.receive_nowait()
