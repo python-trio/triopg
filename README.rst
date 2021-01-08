@@ -65,7 +65,7 @@ In ``asyncpg`` you can manage pools, connections and transactions manually:
     tr.commit()
     conn.close()
 
-While in ``triopg`` you have to use ``async with`` blocks:
+While in ``triopg`` you can *only* use ``async with`` blocks:
 
 .. code-block:: python
 
