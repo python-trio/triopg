@@ -15,7 +15,8 @@ triopg
 
 Welcome to `triopg <https://github.com/python-trio/triopg>`__!
 
-PostgreSQL client for Trio based on asyncpg
+PostgreSQL client for `Trio <https://trio.readthedocs.io/>`__ based on
+`asyncpg <https://magicstack.github.io/asyncpg/>`__.
 
 License: Your choice of MIT or Apache License 2.0
 
@@ -48,3 +49,32 @@ Quick example:
 
 
     trio_asyncio.run(main)
+
+API
+---
+
+``triopg`` is a thin Trio-compatible wrapper around ``asyncpg``. The API is the same,
+with one exception - ``triopg`` does not support manual resource management.
+In ``asyncpg`` you can manage pools, connections and transactions manually:
+
+.. code-block:: python
+
+    conn = await asyncpg.connect()
+    tr = conn.transaction()
+    # ..
+    tr.commit()
+    conn.close()
+
+While in ``triopg`` you can *only* use ``async with`` blocks:
+
+.. code-block:: python
+
+    async with triopg.connect() as conn:
+        async with conn.transaction():
+            # ...
+
+Otherwise you can follow ``asyncpg``
+`tutorial <https://magicstack.github.io/asyncpg/current/usage.html>`__ and
+`reference <https://magicstack.github.io/asyncpg/current/api/>`__.
+Everything should work the same way. Please
+`file an issue <https://github.com/python-trio/triopg/issues/new>`__ if it doesn't.
