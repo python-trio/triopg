@@ -180,3 +180,22 @@ async def test_listener(triopg_conn, asyncpg_execute):
     assert payload == "2"
     with pytest.raises(trio.WouldBlock):
         await listener_receiver.receive_nowait()
+
+
+@pytest.mark.trio
+async def test_listen(nursery, triopg_conn, asyncpg_execute):
+
+    received = []
+
+    async def listen(task_status=trio.TASK_STATUS_IGNORED):
+        async with triopg_conn.listen("foo") as changes:
+            task_status.started()
+            async for change in changes:
+                received.append(change)
+
+    await nursery.start(listen)
+
+    await asyncpg_execute("NOTIFY foo, '1'")
+    await asyncpg_execute("NOTIFY foo, '2'")
+
+    assert received == ["1", "2"]
