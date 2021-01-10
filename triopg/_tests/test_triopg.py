@@ -192,6 +192,8 @@ async def test_listen(nursery, triopg_conn, asyncpg_execute):
             task_status.started()
             async for change in changes:
                 received.append(change)
+                if change == '2':
+                    break
 
     await nursery.start(listen)
 
