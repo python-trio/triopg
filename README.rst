@@ -82,9 +82,9 @@ Everything should work the same way. Please
 Helpers
 -------
 
-In addiction to ``asyncpg``-compatible API, ``triopg`` provides Trio-style
-``.listen()`` helper for
-`Postgres LISTEN statement <https://www.postgresql.org/docs/current/sql-listen.html>`__.
+In addition to ``asyncpg``-compatible API, ``triopg`` provides Trio-style
+``.listen()`` helper for the eponymous
+`Postgres statement <https://www.postgresql.org/docs/current/sql-listen.html>`__:
 
 .. code-block:: python
 
