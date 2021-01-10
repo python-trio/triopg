@@ -1,5 +1,6 @@
 from functools import wraps, partial
 from inspect import iscoroutinefunction
+from contextlib import asynccontextmanager
 import trio
 import asyncpg
 import trio_asyncio
@@ -224,3 +225,25 @@ class TrioPoolProxy:
 
     async def __aexit__(self, *exc):
         return await self.close()
+
+
+@asynccontextmanager
+async def listen(conn, channel):
+    """LISTEN on `channel` notifications and return memory channel to iterate over
+
+    For example:
+
+    async with listen(conn, 'some.changes') as changes:
+        async for change in changes:
+            print('Postgres notification received:', change)
+    """
+
+    send_channel, receive_channel = trio.open_memory_channel(1)
+
+    def _listen_callback(c, pid, chan, payload):
+        send_channel.send_nowait(payload)
+
+    await conn.add_listener(channel, _listen_callback)
+    async with send_channel:
+        yield receive_channel
+    await conn.remove_listener(channel, _listen_callback)
