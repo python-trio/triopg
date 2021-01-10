@@ -1,3 +1,4 @@
+import sys
 import pytest
 import trio
 import trio_asyncio
@@ -182,6 +183,7 @@ async def test_listener(triopg_conn, asyncpg_execute):
         await listener_receiver.receive_nowait()
 
 
+@pytest.mark.skipif(sys.version_info < (3, 7), reason='missing contextlib.asynccontextmanager')
 @pytest.mark.trio
 async def test_listen(nursery, triopg_conn, asyncpg_execute):
 

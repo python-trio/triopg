@@ -1,9 +1,16 @@
 from functools import wraps, partial
 from inspect import iscoroutinefunction
-from contextlib import asynccontextmanager
 import trio
 import asyncpg
 import trio_asyncio
+
+try:
+    from contextlib import asynccontextmanager
+except ImportError:
+    def asynccontextmanager(f):
+        def error(*args):
+            raise NotImplementedError('Python 3.7+ only')
+        return error
 
 
 def _shielded(f):
@@ -123,7 +130,7 @@ class TrioConnectionProxy:
         return TrioStatementProxy(asyncpg_statement)
 
     @asynccontextmanager
-    async def listen(conn, channel):
+    async def listen(self, channel):
         """LISTEN on `channel` notifications and return memory channel to iterate over
 
         For example:
@@ -138,10 +145,10 @@ class TrioConnectionProxy:
         def _listen_callback(c, pid, chan, payload):
             send_channel.send_nowait(payload)
 
-        await conn.add_listener(channel, _listen_callback)
+        await self.add_listener(channel, _listen_callback)
         async with send_channel:
             yield receive_channel
-        await conn.remove_listener(channel, _listen_callback)
+        await self.remove_listener(channel, _listen_callback)
 
     def __getattr__(self, attr):
         target = getattr(self._asyncpg_conn, attr)
