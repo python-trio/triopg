@@ -98,8 +98,7 @@ There are two possible ways to fix it:
 1. Do less work in `async for` block and consume notifications as soon as they arrive.
 2. Try to increase max buffer size (``1`` by default). E.g. ``conn.listen('channel', max_buffer_size=64)``.
    For a detailed discussion on buffering, see Trio manual,
-   `"Buffering in channels" <https://trio.readthedocs.io/en/stable/reference-core.html#buffering-in-channels
->`__
+   `"Buffering in channels" <https://trio.readthedocs.io/en/stable/reference-core.html#buffering-in-channels>`__
    section.
 
 If nothing helps, `file an issue <https://github.com/python-trio/triopg/issues/new>`__.

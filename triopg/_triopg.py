@@ -135,12 +135,14 @@ class TrioConnectionProxy:
                 print('Postgres notification received:', notification)
         """
 
-        send_channel, receive_channel = trio.open_memory_channel(max_buffer_size)
+        send_channel, receive_channel = trio.open_memory_channel(
+            max_buffer_size
+        )
 
         # Memory channel is potentially bounded, calling `.send_nowait` could raise
         # trio.WouldBlock. We can't let WouldBlock propogate from _listen_callback.
         # The exception would vanish inside asyncpg.
-        # 
+        #
         # Instead we wrap this async context manager with a cancel scope, cancel() it
         # on WouldBlock exception, and turn the cancellation into TooSlowError.
         cancel_scope = trio.CancelScope()
@@ -158,7 +160,7 @@ class TrioConnectionProxy:
             with cancel_scope:
                 yield receive_channel
                 # Give a chance for cancellation to propagate sooner
-                await trio.sleep(0)  
+                await trio.sleep(0)
             await self.remove_listener(channel, _listen_callback)
 
             # Convert cancellation to an error
