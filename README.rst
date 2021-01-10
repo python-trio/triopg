@@ -91,3 +91,18 @@ In addition to ``asyncpg``-compatible API, ``triopg`` provides Trio-style
     async with conn.listen('some.channel') as notifications:
         async for notification in notifications:
             print('Notification received:', notification)
+
+The helper could raise ``trio.TooSlowError`` if notifications are not consumed fast enough.
+There are two possible ways to fix it:
+
+1. Do less work in `async for` block and consume notifications as soon as they arrive.
+2. Try to increase max buffer size (``1`` by default). E.g. ``conn.listen('channel', max_buffer_size=64)``.
+   For a detailed discussion on buffering, see Trio manual,
+   `"Buffering in channels" <https://trio.readthedocs.io/en/stable/reference-core.html#buffering-in-channels
+>`__
+   section.
+
+If nothing helps, `file an issue <https://github.com/python-trio/triopg/issues/new>`__.
+
+(Ideally we would want to politely ask Postgres to slow down. Unfortunately,
+`LISTEN backpressure is not supported <https://github.com/MagicStack/asyncpg/issues/463>`__.)

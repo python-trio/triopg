@@ -183,23 +183,37 @@ async def test_listener(triopg_conn, asyncpg_execute):
 
 
 @pytest.mark.trio
-async def test_listen(nursery, triopg_conn, asyncpg_execute):
+async def test_listen(triopg_conn, asyncpg_execute):
+    await asyncpg_execute("NOTIFY foo, '1'")  # should be ignored
 
-    received = []
+    async with triopg_conn.listen("foo") as changes:
+        await asyncpg_execute("NOTIFY foo, '2'")
+        assert await changes.receive() == "2"
+        await asyncpg_execute("NOTIFY foo, '3'")
+        assert await changes.receive() == "3"
 
-    async def listen(task_status=trio.TASK_STATUS_IGNORED):
-        async with triopg_conn.listen("foo") as changes:
-            task_status.started()
-            async for change in changes:
-                received.append(change)
-                if change == '2':
-                    break
+    await asyncpg_execute("NOTIFY foo, '4'")  # should be ignored
 
-    await nursery.start(listen)
+    with pytest.raises(trio.EndOfChannel):
+        await changes.receive()
 
-    await asyncpg_execute("NOTIFY foo, '1'")
-    await asyncpg_execute("NOTIFY foo, '2'")
 
-    assert received == ["1", "2"]
+@pytest.mark.trio
+async def test_listen_too_slow(triopg_conn, asyncpg_execute):
+    async with triopg_conn.listen("foo"):
+        await asyncpg_execute("NOTIFY foo, '1'")
 
-    await trio.testing.wait_all_tasks_blocked()
+    with pytest.raises(trio.TooSlowError):
+        async with triopg_conn.listen("foo"):
+            await asyncpg_execute("NOTIFY foo, '1'")
+            await asyncpg_execute("NOTIFY foo, '2'")
+
+    async with triopg_conn.listen("foo", max_buffer_size=2):
+        await asyncpg_execute("NOTIFY foo, '1'")
+        await asyncpg_execute("NOTIFY foo, '2'")
+
+    with pytest.raises(trio.TooSlowError):
+        async with triopg_conn.listen("foo", max_buffer_size=2):
+            await asyncpg_execute("NOTIFY foo, '1'")
+            await asyncpg_execute("NOTIFY foo, '2'")
+            await asyncpg_execute("NOTIFY foo, '3'")
