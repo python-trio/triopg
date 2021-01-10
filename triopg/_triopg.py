@@ -3,14 +3,7 @@ from inspect import iscoroutinefunction
 import trio
 import asyncpg
 import trio_asyncio
-
-try:
-    from contextlib import asynccontextmanager
-except ImportError:
-    def asynccontextmanager(f):
-        def error(*args):
-            raise NotImplementedError('Python 3.7+ only')
-        return error
+from async_generator import asynccontextmanager
 
 
 def _shielded(f):
