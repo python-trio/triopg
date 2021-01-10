@@ -50,8 +50,8 @@ Quick example:
 
     trio_asyncio.run(main)
 
-API
----
+API basics
+----------
 
 ``triopg`` is a thin Trio-compatible wrapper around ``asyncpg``. The API is the same,
 with one exception - ``triopg`` does not support manual resource management.
@@ -78,3 +78,16 @@ Otherwise you can follow ``asyncpg``
 `reference <https://magicstack.github.io/asyncpg/current/api/>`__.
 Everything should work the same way. Please
 `file an issue <https://github.com/python-trio/triopg/issues/new>`__ if it doesn't.
+
+Helpers
+-------
+
+In addiction to ``asyncpg``-compatible API, ``triopg`` provides Trio-style
+``.listen()`` helper for
+`Postgres LISTEN statement <https://www.postgresql.org/docs/current/sql-listen.html>`__.
+
+.. code-block:: python
+
+    async with conn.listen('some.channel') as notifications:
+        async for notification in notifications:
+            print('Notification received:', notification)
