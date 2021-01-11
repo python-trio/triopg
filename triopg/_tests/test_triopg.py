@@ -232,3 +232,12 @@ async def test_listen_overflow(triopg_conn, asyncpg_execute):
         # '3', '4' were dropped on the floor
         await asyncpg_execute("NOTIFY foo, '6'")
         assert await changes.receive() == "6"
+
+
+@pytest.mark.trio
+async def test_listen_cancel(triopg_conn):
+    with trio.CancelScope() as cancel_scope:
+        async with triopg_conn.listen("foo", max_buffer_size=1):
+            assert triopg_conn._asyncpg_conn._listeners
+            cancel_scope.cancel()
+        assert not triopg_conn._asyncpg_conn._listeners

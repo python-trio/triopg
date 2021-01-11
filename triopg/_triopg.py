@@ -140,7 +140,9 @@ class TrioConnectionProxy:
         """
 
         assert max_buffer_size >= 1
-        send_channel, receive_channel = trio.open_memory_channel(max_buffer_size + 1)
+        send_channel, receive_channel = trio.open_memory_channel(
+            max_buffer_size + 1
+        )
 
         def _listen_callback(c, pid, chan, payload):
             stats = send_channel.statistics()
@@ -153,8 +155,11 @@ class TrioConnectionProxy:
 
         async with receive_channel, send_channel:
             await self.add_listener(channel, _listen_callback)
-            yield receive_channel
-            await self.remove_listener(channel, _listen_callback)
+            try:
+                yield receive_channel
+            finally:
+                with trio.CancelScope(shield=True):
+                    await self.remove_listener(channel, _listen_callback)
 
     def __getattr__(self, attr):
         target = getattr(self._asyncpg_conn, attr)
