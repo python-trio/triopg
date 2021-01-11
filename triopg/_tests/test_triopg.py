@@ -186,7 +186,7 @@ async def test_listener(triopg_conn, asyncpg_execute):
 async def test_listen(triopg_conn, asyncpg_execute):
     await asyncpg_execute("NOTIFY foo, '1'")  # should be ignored
 
-    async with triopg_conn.listen("foo") as changes:
+    async with triopg_conn.listen("foo", max_buffer_size=1) as changes:
         await asyncpg_execute("NOTIFY foo, '2'")
         assert await changes.receive() == "2"
         await asyncpg_execute("NOTIFY foo, '3'")
@@ -194,26 +194,41 @@ async def test_listen(triopg_conn, asyncpg_execute):
 
     await asyncpg_execute("NOTIFY foo, '4'")  # should be ignored
 
-    with pytest.raises(trio.EndOfChannel):
+    with pytest.raises(trio.ClosedResourceError):
         await changes.receive()
 
 
 @pytest.mark.trio
-async def test_listen_too_slow(triopg_conn, asyncpg_execute):
-    async with triopg_conn.listen("foo"):
+async def test_listen_overflow(triopg_conn, asyncpg_execute):
+    async with triopg_conn.listen("foo", max_buffer_size=1) as changes:
         await asyncpg_execute("NOTIFY foo, '1'")
+        assert await changes.receive() == "1"
 
-    with pytest.raises(trio.TooSlowError):
-        async with triopg_conn.listen("foo"):
-            await asyncpg_execute("NOTIFY foo, '1'")
-            await asyncpg_execute("NOTIFY foo, '2'")
-
-    async with triopg_conn.listen("foo", max_buffer_size=2):
+    async with triopg_conn.listen("foo", max_buffer_size=2) as changes:
         await asyncpg_execute("NOTIFY foo, '1'")
         await asyncpg_execute("NOTIFY foo, '2'")
+        assert await changes.receive() == "1"
+        assert await changes.receive() == "2"
 
-    with pytest.raises(trio.TooSlowError):
-        async with triopg_conn.listen("foo", max_buffer_size=2):
-            await asyncpg_execute("NOTIFY foo, '1'")
-            await asyncpg_execute("NOTIFY foo, '2'")
-            await asyncpg_execute("NOTIFY foo, '3'")
+    async with triopg_conn.listen("foo", max_buffer_size=1) as changes:
+        await asyncpg_execute("NOTIFY foo, '1'")
+        await asyncpg_execute("NOTIFY foo, '2'")
+        await asyncpg_execute("NOTIFY foo, '3'")
+        await asyncpg_execute("NOTIFY foo, '4'")
+        assert await changes.receive() == "1"
+        assert await changes.receive() == triopg.NOTIFY_OVERFLOW
+        # '2', '3', '4' were dropped on the floor
+        await asyncpg_execute("NOTIFY foo, '5'")
+        assert await changes.receive() == "5"
+
+    async with triopg_conn.listen("foo", max_buffer_size=2) as changes:
+        await asyncpg_execute("NOTIFY foo, '1'")
+        await asyncpg_execute("NOTIFY foo, '2'")
+        await asyncpg_execute("NOTIFY foo, '3'")
+        await asyncpg_execute("NOTIFY foo, '4'")
+        assert await changes.receive() == "1"
+        assert await changes.receive() == "2"
+        assert await changes.receive() == triopg.NOTIFY_OVERFLOW
+        # '3', '4' were dropped on the floor
+        await asyncpg_execute("NOTIFY foo, '6'")
+        assert await changes.receive() == "6"

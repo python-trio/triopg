@@ -105,6 +105,9 @@ class TrioStatementProxy:
         return target
 
 
+NOTIFY_OVERFLOW = object()
+
+
 class TrioConnectionProxy:
     def __init__(self, *args, **kwargs):
         self._asyncpg_create_connection = partial(
@@ -123,52 +126,35 @@ class TrioConnectionProxy:
         return TrioStatementProxy(asyncpg_statement)
 
     @asynccontextmanager
-    async def listen(self, channel, *, max_buffer_size=1):
+    async def listen(self, channel, max_buffer_size):
         """LISTEN on `channel` notifications and return memory channel to iterate over
 
         max_buffer_size - memory channel max buffer size
 
         For example:
 
-        async with conn.listen('some.changes') as notifications:
+        async with conn.listen('some.changes', max_buffer_size=1) as notifications:
             async for notification in notifications:
-                print('Postgres notification received:', notification)
+                if notification != NOTIFY_OVERFLOW:
+                    print('Postgres notification received:', notification)
         """
 
-        send_channel, receive_channel = trio.open_memory_channel(
-            max_buffer_size
-        )
-
-        # Memory channel is potentially bounded, calling `.send_nowait` could raise
-        # trio.WouldBlock. We can't let WouldBlock propogate from _listen_callback.
-        # The exception would vanish inside asyncpg.
-        #
-        # Instead we wrap this async context manager with a cancel scope, cancel() it
-        # on WouldBlock exception, and turn the cancellation into TooSlowError.
-        cancel_scope = trio.CancelScope()
+        assert max_buffer_size >= 1
+        send_channel, receive_channel = trio.open_memory_channel(max_buffer_size + 1)
 
         def _listen_callback(c, pid, chan, payload):
+            stats = send_channel.statistics()
+            if stats.current_buffer_used == stats.max_buffer_size - 1:
+                send_channel.send_nowait(NOTIFY_OVERFLOW)
             try:
                 send_channel.send_nowait(payload)
             except trio.WouldBlock:
-                cancel_scope.cancel()
+                pass  # drop payload on the floor
 
-        await self.add_listener(channel, _listen_callback)
-
-        async with send_channel:
-            # Put `async with conn.listen(...)` block into the `cancel_scope`
-            with cancel_scope:
-                yield receive_channel
-                # Give a chance for cancellation to propagate sooner
-                await trio.sleep(0)
+        async with receive_channel, send_channel:
+            await self.add_listener(channel, _listen_callback)
+            yield receive_channel
             await self.remove_listener(channel, _listen_callback)
-
-            # Convert cancellation to an error
-            if cancel_scope.cancelled_caught:
-                raise trio.TooSlowError(
-                    "Too slow to consume LISTEN notifications, consume faster or"
-                    " increase max_buffer_size"
-                )
 
     def __getattr__(self, attr):
         target = getattr(self._asyncpg_conn, attr)
