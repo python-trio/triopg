@@ -174,7 +174,7 @@ async def test_listener(triopg_conn, asyncpg_execute):
     await triopg_conn.remove_listener("foo", _listener)
     assert await asyncpg_execute("NOTIFY foo, '3'")  # Should be ignored
 
-    with trio.fail_after(1):
+    with trio.fail_after(5):
         channel, payload = await listener_receiver.receive()
     assert channel == "foo"
     assert payload == "2"
