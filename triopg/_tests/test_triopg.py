@@ -185,7 +185,7 @@ async def test_listener(triopg_conn, asyncpg_execute):
 @pytest.mark.trio
 async def test_listener_cancel(triopg_conn, asyncpg_execute):
     def _listener(*args):
-        pass
+        pass  # pragma: no cover
 
     assert not triopg_conn._asyncpg_conn._listeners
     await triopg_conn.add_listener("foo", _listener)
@@ -260,4 +260,4 @@ async def test_listen_cancel(triopg_conn):
         async with triopg_conn.listen("foo", max_buffer_size=1):
             assert triopg_conn._asyncpg_conn._listeners
             cancel_scope.cancel()
-        assert not triopg_conn._asyncpg_conn._listeners
+    assert not triopg_conn._asyncpg_conn._listeners
