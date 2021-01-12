@@ -181,9 +181,11 @@ async def test_listener(triopg_conn, asyncpg_execute):
     with pytest.raises(trio.WouldBlock):
         await listener_receiver.receive_nowait()
 
+
 @pytest.mark.trio
 async def test_listener_cancel(triopg_conn, asyncpg_execute):
-    def _listener(*args): pass
+    def _listener(*args):
+        pass
 
     assert not triopg_conn._asyncpg_conn._listeners
     await triopg_conn.add_listener("foo", _listener)
@@ -197,6 +199,7 @@ async def test_listener_cancel(triopg_conn, asyncpg_execute):
 
     # clean up to prevent "active connection left" warning
     await triopg_conn.remove_listener("foo", _listener)
+
 
 @pytest.mark.trio
 async def test_listen(triopg_conn, asyncpg_execute):
