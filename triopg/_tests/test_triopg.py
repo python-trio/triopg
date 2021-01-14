@@ -182,23 +182,34 @@ async def test_listener(triopg_conn, asyncpg_execute):
         await listener_receiver.receive_nowait()
 
 
+async def assert_listeners(conn, status):
+    """Assert expected listeners `status`, on Postgres and on asyncpg"""
+
+    pg = await conn.fetchval("select * from pg_listening_channels()") is not None
+    assert pg == status
+    assert bool(conn._asyncpg_conn._listeners) == status
+
+
 @pytest.mark.trio
 async def test_listener_cancel(triopg_conn, asyncpg_execute):
+    """Test .remove_listener consistent cancellation"""
+
     def _listener(*args):
         pass  # pragma: no cover
 
-    assert not triopg_conn._asyncpg_conn._listeners
+    await assert_listeners(triopg_conn, False)
     await triopg_conn.add_listener("foo", _listener)
-    assert triopg_conn._asyncpg_conn._listeners
+    await assert_listeners(triopg_conn, True)
     with trio.CancelScope() as cancel_scope:
         cancel_scope.cancel()
         await triopg_conn.remove_listener("foo", _listener)
 
-    # cancellation prevented .remove_listener() call
-    assert triopg_conn._asyncpg_conn._listeners
+    # cancellation completely prevented .remove_listener() call
+    await assert_listeners(triopg_conn, True)
 
     # clean up to prevent "active connection left" warning
     await triopg_conn.remove_listener("foo", _listener)
+    await assert_listeners(triopg_conn, False)
 
 
 @pytest.mark.trio
@@ -256,8 +267,8 @@ async def test_listen_overflow(triopg_conn, asyncpg_execute):
 @pytest.mark.trio
 async def test_listen_cancel(triopg_conn):
     with trio.CancelScope() as cancel_scope:
-        assert not triopg_conn._asyncpg_conn._listeners
+        await assert_listeners(triopg_conn, False)
         async with triopg_conn.listen("foo", max_buffer_size=1):
-            assert triopg_conn._asyncpg_conn._listeners
+            await assert_listeners(triopg_conn, True)
             cancel_scope.cancel()
-    assert not triopg_conn._asyncpg_conn._listeners
+    await assert_listeners(triopg_conn, False)
