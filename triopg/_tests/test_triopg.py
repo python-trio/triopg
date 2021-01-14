@@ -185,7 +185,9 @@ async def test_listener(triopg_conn, asyncpg_execute):
 async def assert_listeners(conn, status):
     """Assert expected listeners `status`, on Postgres and on asyncpg"""
 
-    pg = await conn.fetchval("select * from pg_listening_channels()") is not None
+    pg = await conn.fetchval(
+        "select * from pg_listening_channels()"
+    ) is not None
     assert pg == status
     assert bool(conn._asyncpg_conn._listeners) == status
 
