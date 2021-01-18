@@ -3,6 +3,7 @@ from inspect import iscoroutinefunction
 import trio
 import asyncpg
 import trio_asyncio
+from async_generator import asynccontextmanager
 
 
 def _shielded(f):
@@ -104,6 +105,9 @@ class TrioStatementProxy:
         return target
 
 
+NOTIFY_OVERFLOW = object()
+
+
 class TrioConnectionProxy:
     def __init__(self, *args, **kwargs):
         self._asyncpg_create_connection = partial(
@@ -120,6 +124,42 @@ class TrioConnectionProxy:
             self._asyncpg_conn.prepare(*args, **kwargs)
         )
         return TrioStatementProxy(asyncpg_statement)
+
+    @asynccontextmanager
+    async def listen(self, channel, max_buffer_size):
+        """LISTEN on `channel` notifications and return memory channel to iterate over
+
+        max_buffer_size - memory channel max buffer size
+
+        For example:
+
+        async with conn.listen('some.changes', max_buffer_size=1) as notifications:
+            async for notification in notifications:
+                if notification != NOTIFY_OVERFLOW:
+                    print('Postgres notification received:', notification)
+        """
+
+        assert max_buffer_size >= 1
+        send_channel, receive_channel = trio.open_memory_channel(
+            max_buffer_size + 1
+        )
+
+        def _listen_callback(c, pid, chan, payload):
+            stats = send_channel.statistics()
+            if stats.current_buffer_used == stats.max_buffer_size - 1:
+                send_channel.send_nowait(NOTIFY_OVERFLOW)
+            try:
+                send_channel.send_nowait(payload)
+            except trio.WouldBlock:
+                pass  # drop payload on the floor
+
+        async with receive_channel, send_channel:
+            await self.add_listener(channel, _listen_callback)
+            try:
+                yield receive_channel
+            finally:
+                with trio.CancelScope(shield=True):
+                    await self.remove_listener(channel, _listen_callback)
 
     def __getattr__(self, attr):
         target = getattr(self._asyncpg_conn, attr)

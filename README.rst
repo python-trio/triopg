@@ -50,8 +50,8 @@ Quick example:
 
     trio_asyncio.run(main)
 
-API
----
+API basics
+----------
 
 ``triopg`` is a thin Trio-compatible wrapper around ``asyncpg``. The API is the same,
 with one exception - ``triopg`` does not support manual resource management.
@@ -78,3 +78,38 @@ Otherwise you can follow ``asyncpg``
 `reference <https://magicstack.github.io/asyncpg/current/api/>`__.
 Everything should work the same way. Please
 `file an issue <https://github.com/python-trio/triopg/issues/new>`__ if it doesn't.
+
+Helpers
+-------
+
+In addition to ``asyncpg``-compatible API, ``triopg`` provides Trio-style
+``.listen()`` helper for the eponymous
+`Postgres statement <https://www.postgresql.org/docs/current/sql-listen.html>`__:
+
+.. code-block:: python
+
+    async with conn.listen('some.channel', max_buffer_size=1) as notifications:
+        async for notification in notifications:
+            if notification != triopg.NOTIFY_OVERFLOW:
+                print('Notification received:', notification)
+
+``max_buffer_size`` is the amount of notifications you are willing to queue in memory.
+
+If you **don't** want to think about buffering, set the buffer size to ``math.inf``
+and everything will just work in regular non-pathological situations.
+
+Otherwise, you can set a finite buffer. In this case you should handle
+``triopg.NOTIFY_OVERFLOW`` marker and react according to your use case.
+For example, you could re-scan the tables, like you would do at startup.
+Or could you simply ignore the marker if you are only interested in the
+newest notifications.
+
+For detailed discussion on buffering, see Trio manual,
+`"Buffering in channels" <https://trio.readthedocs.io/en/stable/reference-core.html#buffering-in-channels>`__
+section.
+
+**Note:** we can't politely ask Postgres to slow down: ``LISTEN`` backpressure is
+`not supported by asyncpg <https://github.com/MagicStack/asyncpg/issues/463>`__.
+There's also an inherent challenge with Postgres. Postgres (like most
+broadcast systems) doesn't really have a good way to communicate backpressure
+further upstream to the clients that are calling ``NOTIFY``.
