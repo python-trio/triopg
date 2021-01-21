@@ -112,6 +112,14 @@ async def test_prepared_statement(triopg_conn):
 
 
 @pytest.mark.trio
+async def test_prepared_statement_statusmsg(triopg_conn):
+    stmt = await triopg_conn.prepare("VALUES (1), (1), (1)")
+    await stmt.fetch()
+    assert stmt.get_statusmsg() == 'SELECT 3'
+    assert stmt.get_query() == 'VALUES (1), (1), (1)'
+
+
+@pytest.mark.trio
 async def test_execute_many(triopg_conn, asyncpg_execute):
     await triopg_conn.execute(
         """
