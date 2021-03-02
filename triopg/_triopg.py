@@ -90,7 +90,10 @@ class TrioStatementProxy:
     def __getattr__(self, attr):
         target = getattr(self._asyncpg_statement, attr)
 
-        if callable(target):
+        # iscoroutinefunction(target) is not enough, because PreparedStatement
+        # methods are wrapped with @connresource.guarded
+        if iscoroutinefunction(target.__wrapped__
+                               if hasattr(target, '__wrapped__') else target):
 
             @wraps(target)
             @trio_asyncio.aio_as_trio
