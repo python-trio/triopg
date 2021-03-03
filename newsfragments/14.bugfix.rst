@@ -1,2 +1,0 @@
-Correctly proxy ordinary (non-async) ``PreparedStatement`` methods.
-For example, ``.get_statusmsg()``, ``.get_query()`` etc.

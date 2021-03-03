@@ -5,6 +5,24 @@ Release history
 
 .. towncrier release notes start
 
+Triopg 0.6.0 (2021-03-03)
+-------------------------
+
+Features
+~~~~~~~~
+
+- Add ``.listen`` helper for Trio-style handling of LISTEN notifications. (`#13 <https://github.com/python-trio/triopg/issues/13>`__)
+
+
+Bugfixes
+~~~~~~~~
+
+- Correctly proxy ordinary (non-async) ``asyncpg.Connection`` methods.
+  For example, ``.is_closed()``, ``.get_server_pid()`` etc. (`#11 <https://github.com/python-trio/triopg/issues/11>`__)
+- Correctly proxy ordinary (non-async) ``PreparedStatement`` methods.
+  For example, ``.get_statusmsg()``, ``.get_query()`` etc. (`#14 <https://github.com/python-trio/triopg/issues/14>`__)
+
+
 Triopg 0.5.0 (2020-08-03)
 -------------------------
 
