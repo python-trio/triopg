@@ -3,7 +3,7 @@ from inspect import iscoroutinefunction
 import trio
 import asyncpg
 import trio_asyncio
-from async_generator import asynccontextmanager
+from contextlib import asynccontextmanager
 
 
 def _shielded(f):
