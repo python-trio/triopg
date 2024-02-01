@@ -13,6 +13,9 @@
 triopg
 ======
 
+WARNING: this project is not actively maintained
+================================================
+
 Welcome to `triopg <https://github.com/python-trio/triopg>`__!
 
 PostgreSQL client for `Trio <https://trio.readthedocs.io/>`__ based on
